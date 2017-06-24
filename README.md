@@ -1,3 +1,1 @@
-# Jigsaw-Academy
-Assignments and projects completed in Jigsaw Academy
-Assignments are contained in folders namely R-Folder SAS-Folder Pyhton-Folder  
+This repository will contain projects/case-studies/assignments in implemented in R, SAS and Python  
