@@ -1,0 +1,39 @@
+The dataset contains unsecured loans made to individuals through a third party platform that brings together borrowers and lenders.
+The data consists of three separate worksheets in an Excel file:
+1. One worksheet with loan data for loans of tenure of 3 years (36 MONTHS)
+2. One worksheet with loan data for loans of tenure of 5 years (60 MONTHS)
+3. One worksheet containing data with demographic data of borrowers (DEMO)
+
+Q1) What is total default rate?
+
+Q2) Is there a big difference between 3year and 5 year loans default rate?(>3%)
+
+Q3)Most comman reason cited for taking loan?
+
+Q4) What is the ratio of loan requested to income?
+
+Q5) What is the average grant rate? (RATIO OF LOAN REQUESTED AND LOAN FUNDED)
+
+Q6) HOW GRANT RATE DIFFERS BY INCOME CATEGORY?
+
+Q7) Are there any particular states that are overrepresented in the dataset? Create an index of*/
+/*   share relative to population size (Hint: you will need to source population by state in the US*/
+/*   from an external source)*/
+/*       a. There are loans from most of the US states in the dataset (in the addr_state*/
+/*           variable). You should compare the share of loans by state to the share of the state’s*/
+/*           population to total US population. Identify if there are any states whose share of*/
+/*           loans in this dataset to total loans are much higher than expected based on share of*/
+/*           population.*/
+/*       b. Data for US state population, for the year 2013 can be found online*/
+
+Q8). How important is income verification for granting a loan?
+
+Q9) What is the average interest rate by grade and sub-grade?
+
+Q10) What is the average time between loan acceptance date and loan issuance date?
+
+Q11) Are there any customers that loan data is available for but not demographic data? How*/
+/*    many? Similarly any customers that demo data is available for but not loan data? Please*/
+/*    store these observations in a separate dataset*/
+
+Q12) Gather additional insights from the data.
