@@ -1,0 +1,9 @@
+A credit card company wants to build a credit scoring model, to predict the bad customers.
+
+The company has data on customers details including  the demographic and credit bureau variables.
+
+The dataset contains 1,50,000 observations across 17 variables.
+
+The dependent variable is NPA_Status (0/1).
+
+I have developed a logistic regression model to predict the probability of defaulting for each customer.
