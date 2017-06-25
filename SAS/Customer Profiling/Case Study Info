@@ -1,0 +1,7 @@
+A bank wants to create a profiling of customers to identify the segments of customers who more profitable and are less likely to default on the loans.
+
+The data is available for 1,50,000 customers across 40 variables.
+
+The company has data on customers involving the details about the demographic and credit bureau variables. 
+
+Solution includes clustering of customer data to identify different segments of the customers.
