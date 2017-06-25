@@ -1,0 +1,276 @@
+/*READ THE DATASET USING GUESSINGROWS*/
+proc import datafile="Z:\Assignments\Graded Assignment\
+Topic 10 -  Regression Models\Credit.csv"
+dbms=csv replace out=credit;
+guessingrows =150000;
+
+/*CHECK CONTENTS OF THE DATA*/
+proc contents data=credit;
+
+
+/*CHANGE LONG VARIABLE NAMES TO SHORT*/
+data credit;
+rename RevolvingUtilizationofUnsecuredL=cl_util /*credit utilization*/
+NumberOfTime30_59DaysPastDueNotW=due_60
+NumberOfTime60_89DaysPastDueNotW=due_90
+NumberOfTimes90DaysLate=due_90plus
+NumberOfOpenCreditLinesAndLoans=open_loans
+NumberRealEstateLoansOrLines=open_rsloans
+NumberofDependents = dependents;
+set credit;
+
+/*CHANGE BOTH THE VAR OF MONTHLY INCOME  AND DEPENDENTS FROM CHAR TO NUMERIC*/
+data credit;
+set credit;
+monthlyincomes= input(monthlyincome, best12.);
+monthlyincomes1= input(monthlyincome1, best12.);
+dependent = input(dependents, best12.);
+
+/*CHECK DIFFERENCE BETWEEN TWO DUPLICATE VAR OF MONTHLY INCOME*/
+proc means n nmiss mean mode median max min data=credit;
+var monthlyincomes monthlyincomes1;
+
+/*DROP DUPLICATE INCOME VARIABLE AND CHAR TYPE INCOME VAR*/
+data credit(drop=monthlyincome monthlyincome1 monthlyincomes1 dependents);
+set credit;
+
+/*CHECK DATA FOR MISSING VALUES*/
+proc means n nmiss mean max min data=credit;
+var npa_status;
+
+/*REMOVE TWO EMPTY ROWS ARE THERE AS ALL VAR HAVE 2 MISSING VALUES*/
+data credit;
+set credit;
+if npa_status = . then delete;
+/*150000 ROWS REMAIN*/
+
+proc means n nmiss mean min max data=credit;
+var cl_util; 
+
+/*REMOVE VALUES GREATER THAN 1 IN CL_UTIL*/
+ data credit;
+ set credit;
+ if cl_util>1 then delete;
+/* 146679 observations remain*/
+
+/*REMOVE AGE=0 ROWS*/
+data credit;
+set credit;
+if age=0 then delete;
+
+/*BINNING OF AGE ;*/
+data credit;
+set credit;
+if age le 25 then age25=1; else age25=0;
+if 26 le age le 40 then age40=1; else age40=0;
+if 41 le age le 55 then age55=1; else age55=0;
+if 56 le age le 70 then age70=1; else age70=0;
+if 71 le age le 85 then age85=1; else age85=0;
+
+proc means n nmiss mean min max  data=credit;
+var debtratio;
+
+/*REMOVE VALUES GREATER THAN 1 IN DEBT RATIO*/
+data credit;
+set credit;
+if debtratio ge 1 then delete;
+/*112035 rows*/
+
+/*REMOVE NULLS FROM INCOME*/
+data credit;
+set credit;
+if monthlyincomes = . then delete;
+
+/* DIVIDE income INTO BINS AND ANALYZE FREQUENCY AND OUTLIERS*/
+data credit;
+set credit; 
+if monthlyincomes le 500 then inc=1;
+else if 501 le monthlyincomes le 1000 then inc=2;
+else if 1001 le monthlyincomes le 2500 then inc=3;
+else if 2501 le monthlyincomes le 5000 then inc=4;
+else if 5001 le monthlyincomes le 10000 then inc=5;
+else if 10001 le monthlyincomes le 20000 then inc=6;
+else if 20001 le monthlyincomes le 50000 then inc=7;
+else if 50001 le monthlyincomes le 100000 then inc=8;
+else if monthlyincomes ge 100001 then inc=9;
+
+proc freq data=credit;
+table inc; 
+
+proc tabulate data=credit;
+var monthlyincomes;
+class inc;
+table inc, mean*monthlyincomes;
+
+/*REMOVE THE TOP 1 AND BOTTOM 2 BINS from income CONSIDERING AS OUTLIERS*/
+data credit;
+set credit;
+if monthlyincomes le 500 or monthlyincomes ge 50000 then delete;
+
+/*CREATING DUMMY VARIABLE OF INCOME*/
+data credit;
+set credit;
+ if 501 le monthlyincomes le 1000 then inc1=1; else inc1=0;
+ if 1001 le monthlyincomes le 2500 then inc2=1; else inc2=0;
+ if 2501 le monthlyincomes le 5000 then inc3=1; else inc3=0;
+ if 5001 le monthlyincomes le 10000 then inc4=1; else inc4=0;
+ if 10001 le monthlyincomes le 20000 then inc5=1; else inc5=0;
+
+
+/*REMOVE EXTREME OUTLIERS FROM DUE VARIABLE WHICH ALSO LOOKS LIKE AN ERROR*/
+proc freq data = credit;
+tables due_60 due_90 due_90plus;
+
+data credit;
+set credit;
+if due_60 = 96 or due_60 = 98 then delete;
+/*109557 rows*/
+
+
+/*CREATE DUMMY VAR OF QUALTITAIVE VARIABLES*/
+data credit;
+set credit;
+if gender ="Male" then male=1; else male=0;
+if region ="North" then north=1; else north=0;
+if region ="East" then east=1; else east=0;
+if region ="South" then south=1; else south=0;
+if region ="West" then west=1; else west=0;
+if Rented_Ownhouse = "Ownhouse" then ownhouse=1; else ownhouse=0;
+if Occupation ="Non-officer" then non_officer=1; else non_officer=0;
+if Occupation ="Officer1" then officer1=1; else officer1=0;
+if Occupation ="Officer2" then officer2=1; else officer2=0;
+if Occupation ="Officer3" then officer3=1; else officer3=0;
+if education ="Graduate" then grad=1; else grad=0;
+if education ="Matric" then matric=1; else matric=0;
+if education ="PhD" then phd=1; else phd=0;
+if education ="Post-Grad" then post_grad=1; else post_grad=0;
+
+/*check open loans and open real estate loans and rmove outliers*/
+proc univariate data=credit;
+var open_loans open_rsloans;
+
+/*CHECK NPA_STATUS PROPORTION BY OPEN REAL ESTATE LOANS*/
+proc tabulate data=credit;
+var npa_status ;
+class open_rsloans;
+table open_rsloans, npa_status*mean ;
+
+/*CHECK NPA_STATUS PROPORTION BY OPEN LOANS*/
+proc tabulate data=credit;
+var npa_status;
+class open_loans;
+table open_loans, npa_status*mean ;
+
+/*CHECK PROPORTION OF NAP_STATUS by Job and Occupation*/
+proc tabulate data=credit;
+var npa_status;
+class occupation education;
+table occupation*education ,npa_status*mean;
+
+/*DIVIDE THE DATA INTO TEST AND TRAIN*/
+data credit_train credit_test;
+set credit;
+if ranuni(1000)>0.7 then output credit_test;
+else output credit_train;
+/*credit_train has 76483 rows and credit_test has 33063 rows*/
+/**/
+/*/*ITERATION 1 WITH All VARIABLES*/*/
+proc logistic data=credit_train descending;
+model npa_status = cl_util age25 age40 age55 age70 age85 inc1 inc2 inc3 inc4 inc5
+male north east south west ownhouse non_officer officer1 officer2 officer3 grad 
+post_grad matric phd debtratio due_60 due_90 due_90plus 
+open_loans open_rsloans dependent/ ;
+/**/
+/**/
+/*proc reg data=credit_train ;*/
+/*model npa_status = cl_util /*age25 age40 age55 age70 age85*/ age /*inc1 inc2 inc3 inc4 inc5*/*/
+/*monthlyincomes male north east south west ownhouse non_officer officer1 officer2 officer3 grad */
+/*post_grad matric phd debtratio due_60 due_90 due_90plus */
+/*open_loans open_rsloans dependent/ vif collin;*/
+/**/
+/*ITERATION 2 Remove age40*/
+proc logistic data=credit_train descending;
+model npa_status = cl_util age25 age55 age70 age85 inc1 inc2 inc3 inc4 inc5
+male north east south west ownhouse non_officer officer1 officer2 officer3 grad 
+post_grad matric phd debtratio due_60 due_90 due_90plus 
+open_loans open_rsloans dependent/ctable lackfit  ;
+
+/*ITERATION 3 Remove inc1*/
+proc logistic data=credit_train descending;
+model npa_status = cl_util age25 age55 age70 age85 inc2 inc3 inc4 inc5
+male north east south west ownhouse non_officer officer1 officer2 officer3 grad 
+post_grad matric phd debtratio due_60 due_90 due_90plus 
+open_loans open_rsloans dependent/ctable lackfit  ;
+
+/*ITERATION 4 Remove officer1*/
+proc logistic data=credit_train descending;
+model npa_status = cl_util age25 age55 age70 age85 inc2 inc3 inc4 inc5
+male north east south west ownhouse non_officer officer2 officer3 grad 
+post_grad matric phd debtratio due_60 due_90 due_90plus 
+open_loans open_rsloans dependent/ctable lackfit  ;
+
+
+/*ITERATION 5 Remove inc4*/
+proc logistic data=credit_train descending;
+model npa_status = cl_util age25 age55 age70 age85 inc2 inc3 inc5
+male north east south west ownhouse non_officer officer2 officer3 grad 
+post_grad matric phd debtratio due_60 due_90 due_90plus 
+open_loans open_rsloans dependent/ctable lackfit  ;
+
+
+/*ITERATION 6 Remove grad*/
+proc logistic data=credit_train descending;
+model npa_status = cl_util age25 age55 age70 age85 inc2 inc3 inc5
+male north east south west ownhouse non_officer officer2 officer3  
+post_grad matric phd debtratio due_60 due_90 due_90plus 
+open_loans open_rsloans dependent/ctable lackfit  ;
+
+
+/*ITERATION 7 Remove grad*/
+proc logistic data=credit_train descending;
+model npa_status = cl_util age25 age55 age70 age85 inc2 inc3 inc5
+male north east south west ownhouse non_officer officer2 
+post_grad matric phd debtratio due_60 due_90 due_90plus 
+open_loans open_rsloans dependent/ctable lackfit  ;
+score out= credit_train_score;
+
+
+/*final model*/
+proc logistic data=credit_train descending OUTMODEL=credit_train_out;
+model npa_status = cl_util age25 age55 age70 age85 inc2 inc3 inc5
+male north east south west ownhouse non_officer officer2 post_grad 
+matric phd debtratio due_60 due_90 due_90plus open_loans open_rsloans 
+dependent/ctable lackfit  ;score out= credit_train_score;
+
+/*RANKING OF THE MODEL*/
+proc rank data= credit_train_score out=train_decile groups=10 ties=mean;
+var p_1;
+ranks decile;
+
+/*SORT THE ROWS IN DECS ORDER OF PREDICTED PROB*/
+proc sort data=train_decile;
+by descending p_1;
+
+/*SAVE OUTPUT TO FILE*/
+proc export data=train_decile outfile="Y:\10_LogReg_Graded\train_decile.csv"
+dbms=csv replace;
+
+proc freq data=train_decile;
+tables decile;
+
+/*WORKING ON TEST DATASET*/
+proc logistic inmodel=credit_train_out;
+score data=credit_test out =credit_test_score;
+
+proc rank data=credit_test_score out = test_decile groups=10 ties=mean;
+var p_1;
+ranks decile;
+
+proc sort data=test_decile;
+by descending p_1;
+
+proc export data=test_decile outfile="Y:\10_LogReg_Graded\test_decile.csv"
+dbms=csv replace;
+
+proc freq data=test_decile;
+tables decile;
