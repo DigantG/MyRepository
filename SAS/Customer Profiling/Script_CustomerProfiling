@@ -1,0 +1,206 @@
+/*READ THE DATASET USING GUESSINGROWS*/
+proc import datafile="Z:\Assignments\Graded Assignment\Topic 11.2 - Clustering & Decision Trees\Credit - Data to be used for Clustering.csv"
+dbms=csv replace out=credit;
+guessingrows =150000;
+
+
+/*CHECK CONTENTS OF THE DATA*/
+proc contents data=credit;
+
+
+/*CHANGE LONG VARIABLE NAMES TO SHORT*/
+data credit;
+rename RevolvingUtilizationofUnsecuredL=cl_util /*credit utilization*/
+NumberOfTime30_59DaysPastDueNotW=due_60
+NumberOfTime60_89DaysPastDueNotW=due_90
+NumberOfTimes90DaysLate=due_90plus
+NumberOfOpenCreditLinesAndLoans=open_loans
+NumberRealEstateLoansOrLines=open_rsloans
+NumberofDependents = dependents;
+set credit;
+
+/*CHANGE BOTH THE VAR OF MONTHLY INCOME  AND DEPENDENTS FROM CHAR TO NUMERIC*/
+data credit;
+set credit;
+monthlyincomes= input(monthlyincome, best12.);
+monthlyincomes1= input(monthlyincome1, best12.);
+dependent = input(dependents, best12.);
+
+/*CHECK DIFFERENCE BETWEEN TWO DUPLICATE VAR OF MONTHLY INCOME*/
+proc means n nmiss mean mode median max min data=credit;
+var monthlyincomes monthlyincomes1;
+
+/*DROP DUPLICATE INCOME VARIABLE AND CHAR TYPE INCOME VAR*/
+data credit(drop=monthlyincome monthlyincome1 monthlyincomes1 dependents);
+set credit;
+
+/*CHECK DATA FOR MISSING VALUES*/
+proc means n nmiss mean max min data=credit;
+var npa_status;
+
+/*REMOVE TWO EMPTY ROWS ARE THERE AS ALL VAR HAVE 2 MISSING VALUES*/
+data credit;
+set credit;
+if npa_status =. then delete;
+/*150000 ROWS REMAIN*/
+
+proc means n nmiss mean min max data=credit;
+var cl_util; 
+
+/*REMOVE VALUES GREATER THAN 1 IN CL_UTIL*/
+ data credit;
+ set credit;
+ if cl_util>1 then delete;
+/* 146679 observations remain*/
+
+/*REMOVE AGE=0 ROWS*/
+data credit;
+set credit;
+if age=0 then delete;
+
+
+/*/*/*BINNING OF AGE ;*/*/*/
+/*/*data credit;*/*/
+/*/*/*set credit;*/*/*/
+/*/*/*if age le 25 then age25=1 else age25=0;*/*/*/
+/*/*/*if 26 le age le 40 then age40=1 else age40=0;*/*/*/
+/*/*/*if 41 le age le 55 then age55=1 else age55=0;*/*/*/
+/*/*/*if 56 le age le 70 then age70=1 else age70=0;*/*/*/
+/*/*/*if 71 le age le 85 then age85=1 else age85=0;*/*/;*/;
+
+proc means n nmiss mean min max  data=credit;
+var debtratio;
+
+/*REMOVE VALUES GREATER THAN 1 IN DEBT RATIO*/
+data credit;
+set credit;
+if debtratio ge 1 then delete;
+/*112035 rows*/
+
+/*REMOVE NULLS FROM INCOME*/
+data credit;
+set credit;
+if monthlyincomes = . then delete;
+
+/* DIVIDE income INTO BINS AND ANALYZE FREQUENCY AND OUTLIERS*/
+data credit;
+set credit; 
+if monthlyincomes le 500 then inc=1;
+else if 501 le monthlyincomes le 1000 then inc=2;
+else if 1001 le monthlyincomes le 2500 then inc=3;
+else if 2501 le monthlyincomes le 5000 then inc=4;
+else if 5001 le monthlyincomes le 10000 then inc=5;
+else if 10001 le monthlyincomes le 20000 then inc=6;
+else if 20001 le monthlyincomes le 50000 then inc=7;
+else if 50001 le monthlyincomes le 100000 then inc=8;
+else if monthlyincomes ge 100001 then inc=9;
+
+proc freq data=credit;
+table inc; 
+proc tabulate data=credit;
+var monthlyincomes;
+class inc;
+table inc, mean*monthlyincomes;
+
+/*REMOVE THE TOP 1 AND BOTTOM 2 BINS from income CONSIDERING AS OUTLIERS*/
+data credit;
+set credit;
+if monthlyincomes le 500 or monthlyincomes ge 50000 then delete;
+
+/*/*CREATING DUMMY VARIABLE OF INCOME*/*/
+/*data credit;*/
+/*set credit;*/
+/* if 501 le monthlyincomes le 1000 then inc1=1 else inc1=0;*/
+/* if 1001 le monthlyincomes le 2500 then inc2=1 else inc2=0;*/
+/* if 2501 le monthlyincomes le 5000 then inc3=1 else inc3=0;*/
+/* if 5001 le monthlyincomes le 10000 then inc4=1 else inc4=0;*/
+/* if 10001 le monthlyincomes le 20000 then inc5=1 else inc5=0;*/;
+
+
+/*REMOVE EXTREME OUTLIERS FROM DUE VARIABLE WHICH ALSO LOOKS LIKE AN ERROR*/
+proc freq data = credit;
+tables due_60 due_90 due_90plus;
+
+data credit;
+set credit;
+if due_60 = 96 or due_60 = 98 then delete;
+/*109557 rows*/
+
+
+/*CREATE DUMMY VAR OF QUALTITAIVE VARIABLES*/
+data credit;
+set credit;
+if gender ="Male" then male=1;else male=0;
+if region ="North" then north=1; else north=0;
+if region ="East" then east=1; else east=0;
+if region ="South" then south=1; else south=0;
+if region ="West" then west=1; else west=0;
+if Rented_Ownhouse = "Ownhouse" then ownhouse=1; else ownhouse=0;
+if Occupation ="Non-officer" then non_officer=1; else non_officer=0;
+if Occupation ="Officer1" then officer1=1; else officer1=0;
+if Occupation ="Officer2" then officer2=1; else officer2=0;
+if Occupation ="Officer3" then officer3=1; else officer3=0;
+if education ="Graduate" then grad=1; else grad=0;
+if education ="Matric" then matric=1; else matric=0;
+if education ="PhD" then phd=1; else phd=0;
+if education ="Post-Grad" then post_grad=1; else post_grad=0;
+
+data credit(drop=inc);
+set credit;
+
+/*export clean data*/
+proc export data=credit outfile="Y:\11_Cluster&Trees_Graded\clean_credit.csv"
+dbms=csv replace;
+
+/*check for collinearity*/
+/**/
+/*proc reg data=credit;*/
+/*model  npa_status = cl_util age monthlyincomes male north east south */
+/*west ownhouse non_officer officer1 officer2 officer3 grad */
+/*post_grad matric phd debtratio due_60 due_90 due_90plus */
+/*open_loans open_rsloans dependent/ vif collin;*/
+
+/*scaling*/
+proc standard data=credit out=credit_scaled mean=0 std=1 ;
+var npa_status--age due_60--post_grad;
+
+/*weighting*/
+data credit_scaled;
+set credit_scaled;
+npa_status3= npa_status*3;
+income2= monthlyincomes*2;
+age2= age*2;
+cl_util2= cl_util*2;
+debtratio2= debtratio*2;
+
+/*/*check number of optimal clusters by using hierarchical clustering*/*/
+/*proc cluster method=centroid pseudo noeigen ccc data=credit_scaled ;*/
+/*var age due_60--debtratio2;*/;
+
+proc fastclus data=credit_scaled out=cluster_out maxclusters= 8 converge=0 maxiter=500;
+var due_60 open_loans--due_90 dependent--debtratio2;
+
+/*EXPORT CLUSTER INFO*/
+proc export data=cluster_out outfile="Y:\11_Cluster&Trees_Graded\cluster_out.csv"
+dbms=csv replace;
+
+/*GET CLUSTER SUMMARY*/
+proc sort data=cluster_out ;
+by cluster;
+proc means mean data=cluster_out ;
+var due_60 open_loans--due_90 dependent--debtratio2;
+by cluster;
+
+/*IMPORT ORIGINAL DATA WITH CLUSTER INFO*/
+proc import datafile="Y:\11_Cluster&Trees_Graded\cluster_credit.xlsx"
+dbms= excel replace out=cluster_credit ;SHEET="CLEAN_CREDIT";
+
+proc sort data=cluster_credit;
+by cluster;
+
+proc means mean data=cluster_credit;
+var npa_status--age due_60--post_grad;
+by cluster;
+
+proc means mean std data=cluster_credit;
+var npa_status--age due_60--post_grad;
