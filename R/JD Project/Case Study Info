@@ -1,8 +1,8 @@
-This case study basically tries to build  a predictive model which will help the job applicants in optimizing thier efforts.
+This case study builds  a predictive model which will help the job applicants in optimizing thier efforts.
 It will predict which companies have a higher chance of shortlisting  the candidate for further process given the skillset of the
 individual and the job requirements.
 
 The data is collected for 100 companies to which an applicant has applied and after 2 weeks of time a total of 15 companies shortlisted 
 the CV and decided to move to further process of hiring.
 
-Solution Method: Text Analytics have been applied to find out the important keywords from the Job Desciption. 
+Solution Method: Text Analytics have been applied to find out the important keywords from the Job Desciption which match the skillset of the candidate. 
